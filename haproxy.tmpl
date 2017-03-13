@@ -1,0 +1,53 @@
+global
+	log /dev/log	local0
+	log /dev/log	local1 notice
+
+defaults
+	log	global
+	mode	http
+	option	httplog
+	option	dontlognull
+	timeout connect 5000
+	timeout client  50000
+	timeout server  50000
+
+	{{ if (getenv "HAPROXY_STATS") }}
+	stats	enable
+	stats	realm Haproxy\ Statistics
+	{{ if (getenv "HAPROXY_STATS_URI") }}
+	stats	{{ getenv "HAPROXY_STATS_URI" }}
+	{{ else }}
+	stats	uri /stats
+	{{ end }}
+	{{ if (getenv "HAPROXY_STATS_AUTH") }}
+	stats	auth {{ getenv "HAPROXY_STATS_AUTH" }}
+	{{ end }}
+	stats	refresh 5s
+	{{ end }}
+
+frontend http_frontend
+	bind *:80
+	{{ range $service := ls "/services" }}
+	{{ if ls (printf "/services/%s/upstream" $service) }}
+	acl {{ $service }}_acl path_beg {{ if exists (printf "/services/%s/location" $service) }}{{ getv (printf "/services/%s/location" $service) }}{{ else }}/{{ $service }}{{ end }}
+	{{ if exists (printf "/services/%s/location" $service) }}
+	{{ if eq (getv (printf "/services/%s/location" $service)) "/" }}
+	default_backend {{ $service }}_backend
+	{{ else }}
+	use_backend {{ $service }}_backend if {{ $service }}_acl
+	{{ end }}
+	{{ else }}
+	use_backend {{ $service }}_backend if {{ $service }}_acl
+	{{ end }}
+	{{ end }}
+	{{ end }}
+
+{{ range $service := ls "/services" }}
+{{ if ls (printf "/services/%s/upstream" $service) }}
+backend {{ $service }}_backend
+	balance roundrobin
+	{{ range $server := ls (printf "/services/%s/upstream" $service) }}
+	server server_{{ $server }} {{ getv (printf "/services/%s/upstream/%s" $service $server) }} check
+	{{ end }}
+{{ end }}
+{{ end }}
