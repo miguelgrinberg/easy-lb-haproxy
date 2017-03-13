@@ -13,11 +13,12 @@ ETCD_NODES="-node ${ETCD_PEERS//,/ -node }"
 ./confd -onetime $ETCD_NODES -config-file /etc/confd/conf.d/haproxy.toml
 if [ "$?" != "0" ]; then
     echo confd cannot generate initial configuration, exiting.
+    kill -INT 1
     exit 1
 fi
 
 # start the watch cycle
 while [ true ]; do
     ./confd -interval 10 $ETCD_NODES -config-file /etc/confd/conf.d/haproxy.toml
-    echo confd exited, restahaproxy.
+    echo confd exited, restarting.
 done
