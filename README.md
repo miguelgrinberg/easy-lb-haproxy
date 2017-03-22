@@ -33,7 +33,7 @@ The load balancer is automatically configured from the contents of etcd's `/serv
 
 This will cause the load balancer to forward requests to URLs that start with `/foo` to server1 and server2 at the addresses and ports specified, and any requests that start with `/bar` to server3. Note that the names `server{1,2,3}` are not significant, each service can register itself with any name, as long as it is unique.
 
-To use a different URL prefix, set a `path` key. For example, the following command will make the load balancer send requests with URLs that start with `/api/foo` to the `foo` service:
+To use a URL prefix different than the service name, set a `location` key. For example, the following command will make the load balancer send requests with URLs that start with `/api/foo` to the `foo` service:
 
     etcdctl set /services/foo/location /api/foo
 
@@ -41,10 +41,8 @@ To set a service as the default, simply set its location to the root URL:
 
     etcdctl set /services/foo/location /
 
+By default, each backend is configured for round robin load balancing. To use custom backend options, add the desired options under a `backend` key. For example, to set the `source` load balancing algorithm, write the following key:
+
+    etcdctl set /services/foo/backend/balance source
+
 Whenever changes are made in etcd to the `/services` subtree, those changes will automatically trigger a configuration update.
-
-## TODO
-
-- Select load balancing method for each service
-- WebSocket proxying
-- Add custom options to the configuration
