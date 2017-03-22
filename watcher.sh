@@ -10,12 +10,15 @@ done
 
 # attempt to generate a first configuration
 ETCD_NODES="-node ${ETCD_PEERS//,/ -node }"
-./confd -onetime $ETCD_NODES -config-file /etc/confd/conf.d/haproxy.toml
-if [ "$?" != "0" ]; then
-    echo confd cannot generate initial configuration, exiting.
-    kill -INT 1
-    exit 1
-fi
+while [ true ]; do
+    ./confd -onetime $ETCD_NODES -config-file /etc/confd/conf.d/haproxy.toml
+    if [ "$?" != "0" ]; then
+        echo confd cannot generate initial configuration, retrying in 10 sec...
+        sleep 10
+    else
+        break
+    fi
+done
 
 # start the watch cycle
 while [ true ]; do
