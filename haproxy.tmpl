@@ -53,7 +53,7 @@ backend {{ $service }}_backend
     balance roundrobin
     {{ end }}
     {{ range $server := ls (printf "/services/%s/upstream" $service) }}
-    server server_{{ $server }} {{ getv (printf "/services/%s/upstream/%s" $service $server) }} check
+    server {{ $server }} {{ getv (printf "/services/%s/upstream/%s" $service $server) }} check
     {{ end }}
 {{ end }}
 {{ end }}
